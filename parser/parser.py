@@ -2,7 +2,7 @@ import nltk
 from nltk.tree import Tree
 import sys
 import re
-from nltk.tokenize import word_tokenize
+
 
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
@@ -86,6 +86,7 @@ def preprocess(sentence):
 
     return token_bank
 
+
 def np_chunk(tree):
     """
     Return a list of all noun phrase chunks in the sentence tree.
@@ -111,13 +112,13 @@ def np_chunk(tree):
     traverse(tree)
     return chunk
 
+
 def contains_np(tree):
     return any(
         subtree.label() == "NP" 
         for subtree in tree.subtrees() 
         if subtree != tree
-        )
-
+    )
 
 
 if __name__ == "__main__":
