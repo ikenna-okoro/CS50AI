@@ -1,7 +1,6 @@
 import nltk
 from nltk.tree import Tree
 import sys
-import re
 
 
 TERMINALS = """
@@ -79,7 +78,7 @@ def preprocess(sentence):
     token_bank = []
 
     # s = word_tokenize(sentence)
-    s = re.split(r"[^\w]+", sentence)
+    s = nltk.word_tokenize(sentence)
     for t in s:
         if any(char.isalpha() for char in t):
             token_bank.append(t.lower())
