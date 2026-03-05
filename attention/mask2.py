@@ -1,8 +1,8 @@
 import sys
-import tensorflow as tf
+import torch
 
 from PIL import Image, ImageDraw, ImageFont
-from transformers import AutoTokenizer, TFBertForMaskedLM
+from transformers import BertTokenizerFast, BertForMaskedLM
 
 # Pre-trained masked language model
 MODEL = "bert-base-uncased"
@@ -20,19 +20,21 @@ def main():
     text = input("Text: ")
 
     # Tokenize input
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    inputs = tokenizer(text, return_tensors="tf")
+    tokenizer = BertTokenizerFast.from_pretrained(MODEL)
+
+    inputs = tokenizer(text, return_tensors="pt")
+
     mask_token_index = get_mask_token_index(tokenizer.mask_token_id, inputs)
     if mask_token_index is None:
         sys.exit(f"Input must include mask token {tokenizer.mask_token}.")
 
     # Use model to process input
-    model = TFBertForMaskedLM.from_pretrained(MODEL)
+    model = BertForMaskedLM.from_pretrained(MODEL)
     result = model(**inputs, output_attentions=True)
 
     # Generate predictions
     mask_token_logits = result.logits[0, mask_token_index]
-    top_tokens = tf.math.top_k(mask_token_logits, K).indices.numpy()
+    top_tokens = torch.topk(mask_token_logits, K, dim=0).indices
     for token in top_tokens:
         print(text.replace(tokenizer.mask_token, tokenizer.decode([token])))
 
@@ -41,18 +43,12 @@ def main():
 
 
 def get_mask_token_index(mask_token_id, inputs):
-    """
-    Return the index of the token with the specified `mask_token_id`, or
-    `None` if not present in the `inputs`.
-    """
-    index = None
-    token_ids = inputs['input_ids'][0]
-    token_ids_list = token_ids.numpy().tolist()
-    for i in range(len(token_ids_list)):
-        if mask_token_id == token_ids_list[i]:
-            return i
-
-    return index
+    # Find the index of the mask token in the input sequence.
+    seq = inputs["input_ids"][0]
+    mask_positions = (seq == mask_token_id).nonzero(as_tuple=True)[0]
+    if mask_positions.numel() == 0:
+        raise ValueError("No mask token found in input")
+    return mask_positions.item()
 
 
 
